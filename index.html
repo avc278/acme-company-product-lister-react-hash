@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/Faker/3.1.0/faker.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.19.0/axios.js"></script>
+        <link href="https://fonts.googleapis.com/css?family=Open+Sans&display=swap" rel="stylesheet" />
+        <style>
+            nav {
+                display: flex;
+            }
+            nav > a {
+                flex: 1;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div id='root'></div>
+        <script>
+            const Api = 'https://acme-users-api-rev.herokuapp.com/api/'
+            const companiesApi = axios.get(`${Api}companies`)
+            const productsApi = axios.get(`${Api}products`)
+
+            const { Component } = React;
+            const { render } = ReactDOM;
+
+            const compTab = companies => {
+                if (companies.length > 0) {
+                    return React.createElement('a', { href: '#companies' }, `Companies (${companies.length})`)
+                } else {
+                    return React.createElement('a', { href: '#companies' }, 'Companies')
+                }
+            }
+            
+            const prodTab = products => {
+                if (products.length > 0) {
+                    return React.createElement('a', { href: '#products' }, `Products (${products.length})`)
+                } else {
+                    return React.createElement('a', { href: '#products' }, 'Products')
+                }
+            }
+
+            const Nav = ({companies, products, view}) => {
+                const companiesTab = compTab(companies)
+                const productsTab = prodTab(products)
+                return React.createElement('nav', null, productsTab, companiesTab)
+            }
+
+            const CompanyList = ({companies}) => {
+                const lis = companies.map((company, idx) => {
+                    return React.createElement('li', { key: idx, className: 'item' }, company.name);
+                })
+                return React.createElement('ul', null, lis);
+            }
+
+            const ProductList = ({products}) => {
+                const lis = products.map((product, idx) => {
+                    return React.createElement('li', { key: idx, className: 'item' }, `${product.name} - ${product.description}`);
+                })
+                return React.createElement('ul', null, lis);
+            }
+
+            class App extends Component {
+                constructor() {
+                    super();
+                    this.state = {
+                        companies: [],
+                        products: [],
+                        view: '',
+                    }
+                }
+                componentDidMount() {
+                    const p = Promise.all([companiesApi, productsApi])
+                        .then(responses => {
+                            const [companies, products] = responses;
+                            this.setState({
+                                companies: companies.data,
+                                products: products.data,
+                            })
+                        })
+                    window.addEventListener('hashchange', () => {
+                        const view = window.location.hash.slice(1);
+                        this.setState({ view });
+                    })
+                }
+
+                render() {
+                    const { companies, products, view } = this.state;
+                    const nav = React.createElement(Nav, { companies, products, view });
+
+                    let chosenView;
+                    if (view === 'companies') {
+                        chosenView = React.createElement(CompanyList, { companies });
+                    }
+                    if (view === 'products') {
+                        chosenView = React.createElement(ProductList, { products });
+                    }
+
+                    return React.createElement('div', null, nav, chosenView);
+                }
+            }
+            const root = document.querySelector('#root');
+            ReactDOM.render(React.createElement(App), root);
+        </script>
+    </body>
+</html>
